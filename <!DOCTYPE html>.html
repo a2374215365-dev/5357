@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Last Warm Bottle: Split Lives | 最后一瓶·双生记</title>
+    <meta name="description" content="An interactive split-screen narrative exploring memory commodification and class inequality on Planet Keepsend.">
+    
+    <!-- Favicon (Data URI) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%23ffb142%22 opacity=%220.8%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23ffffff%22/></svg>">
+
+    <!-- 引入英文字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: linear-gradient(to bottom, #0a0e17, #020408);
+            --left-bg: linear-gradient(to bottom, #11181e, #1a252c);
+            /* Cold cyan-gray */
+            --right-bg: linear-gradient(to bottom, #1e1810, #2a2015);
+            /* Warm amber-gold */
+            --text-left: #b5cadd;
+            --text-right: #e6cdb3;
+            --accent-cold: #4a69bd;
+            --accent-warm: #ffb142;
+            --font-zh: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            --font-en: 'Cormorant Garamond', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: var(--font-zh);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            transition: background 1s ease;
+        }
+
+        .no-transitions * {
+            transition: none !important;
+            animation: none !important;
+        }
+
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { display: none; }
+        body, .pane {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body[lang="en"] .i18n {
+            font-family: var(--font-en);
+            font-size: 1.25rem;
+            line-height: 1.9;
+        }
+
+        body[lang="en"] h1.i18n { font-size: 2.5rem; }
+        body[lang="en"] h2.i18n { font-size: 2rem; }
+
+        /* 语言文字切换过渡 */
+        .i18n { transition: opacity 0.2s ease-in-out; }
+        .i18n.lang-fading { opacity: 0 !important; }
+
+        /* 背景粒子 */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            20% { opacity: 0.6; }
+            80% { opacity: 0.6; }
+            100% { transform: translateY(-150px) translateX(30px); opacity: 0; }
+        }
+
+        /* 全局动画效果 */
+        .hidden { display: none !important; }
+        
+        .fade-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1.5s ease-out, transform 1.5s ease-out;
+        }
+
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .fade-in {
+            opacity: 0;
+            transition: opacity 1.5s ease-out;
+        }
+
+        .fade-in.visible { opacity: 1; }
+
+        .italic { font-style: italic; opacity: 0.85; }
+
+        /* 排版 */
+        p {
+            line-height: 1.8;
+            margin-bottom: 28px;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        h1, h2, h3 {
+            font-weight: 500;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+        }
+
+        .dialogue { margin-bottom: 16px; }
+
+        .large-text {
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            text-align: center;
+        }
+
+        /* UI 组件 */
+        #back-btn {
+            position: fixed;
+            top: 25px;
+            left: 30px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #back-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        #lang-btn {
+            position: fixed;
+            top: 25px;
+            right: 30px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        #lang-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        #next-btn {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 500;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 15px 30px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+            animation: breathe 2.5s infinite ease-in-out;
+        }
+
+        #next-btn:hover {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.5; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 1; transform: translateX(-50%) translateY(3px); }
+        }
+
+        /* 选项按钮 */
+        .choice-btn {
+            display: block;
+            width: 100%;
+            margin: 16px 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 20px 24px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            border-radius: 8px;
+            text-align: left;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .choice-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .choice-btn.selected {
+            animation: pulse-select 0.5s ease-out forwards;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+        }
+
+        @keyframes pulse-select {
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0.5); }
+            50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+        }
+
+        /* 全屏容器（封面、结局等） */
+        .full-screen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-dark);
+            z-index: 210;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        
+        .full-screen-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* 幕间过渡黑屏 */
+        .overlay-transition {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-dark);
+            z-index: 180;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+
+        .overlay-transition.active { opacity: 1; pointer-events: all; }
+        .overlay-transition p { font-size: 1.5rem; letter-spacing: 2px; }
+
+        /* === 第一幕 裂屏 === */
+        #act1-notice {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 105;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        #center-line-initial {
+            position: fixed;
+            top: 0; left: 50%;
+            width: 2px; height: 100vh;
+            background: #fff;
+            box-shadow: 0 0 15px #fff, 0 0 30px #fff;
+            transform: translateX(-50%) scaleY(0);
+            transform-origin: center;
+            transition: transform 1s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.5s;
+            z-index: 110;
+        }
+        #center-line-initial.grow { transform: translateX(-50%) scaleY(1); }
+
+        .door {
+            position: fixed; top: 0;
+            width: 50vw; height: 100vh;
+            background: var(--bg-dark);
+            z-index: 100;
+            transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+        #door-left { left: 0; transform-origin: left; border-right: 1px solid rgba(255,255,255,0.05); }
+        #door-right { right: 0; transform-origin: right; border-left: 1px solid rgba(255,255,255,0.05); }
+        #door-left.open { transform: translateX(-100%); }
+        #door-right.open { transform: translateX(100%); }
+
+        /* === 分屏布局 === */
+        .split-layout {
+            display: flex;
+            width: 100vw; height: 100vh;
+            position: absolute; top: 0; left: 0;
+            z-index: 10; opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .split-layout.visible { opacity: 1; }
+
+        .pane {
+            flex: 1; padding: 10% 8%;
+            overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+        .pane-left { background: var(--left-bg); color: var(--text-left); }
+        .pane-right { background: var(--right-bg); color: var(--text-right); }
+
+        #center-divider {
+            position: absolute; top: 0; left: 50%;
+            width: 1px; height: 100vh;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 50; transform: translateX(-50%);
+            transition: all 1s;
+        }
+        #center-divider.pulsing {
+            width: 2px; background: #fff;
+            box-shadow: 0 0 15px #fff, 0 0 30px var(--accent-warm);
+            animation: divider-pulse 1.5s infinite alternate;
+        }
+
+        @keyframes divider-pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); opacity: 0.7; }
+            100% { box-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 40px var(--accent-warm); opacity: 1; }
+        }
+
+        /* 卡片与通知 */
+        .notification, .card {
+            border: 1px solid; padding: 28px; margin: 24px 0;
+            border-radius: 8px; background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(5px);
+        }
+        .pane-left .notification, .pane-left .card { border-color: rgba(174, 191, 209, 0.2); }
+        .pane-right .notification, .pane-right .card { border-color: rgba(216, 200, 180, 0.2); }
+
+        .data-panel {
+            font-family: monospace; border: 1px dashed rgba(174, 191, 209, 0.3);
+            padding: 24px; margin-bottom: 30px; background: rgba(0, 0, 0, 0.4);
+        }
+        .data-panel p { margin-bottom: 10px; font-size: 1rem; color: #8fa8be; }
+
+        .bottom-small { font-size: 0.9rem; opacity: 0.5; margin-top: auto; padding-top: 40px; }
+
+        .center-overlay {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 150;
+            background: rgba(10, 14, 23, 0.95);
+            padding: 40px 50px; border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 85%; max-width: 550px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        /* === 第四幕：瓶子穿越 === */
+        #bottle {
+            position: fixed; top: 50%; left: 25%;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent-warm);
+            box-shadow: 0 0 25px 12px rgba(255, 177, 66, 0.6);
+            transform: translate(-50%, -50%); z-index: 200;
+            opacity: 0; pointer-events: none;
+            transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, box-shadow 0.3s;
+            animation: float-y 2s ease-in-out infinite;
+        }
+
+        #bottle.move { opacity: 1; left: 75%; top: 50%; }
+
+        #bottle.transformed {
+            background: var(--accent-cold);
+            box-shadow: 0 0 25px 12px rgba(74, 105, 189, 0.6);
+        }
+
+        @keyframes float-y {
+            0%, 100% { margin-top: 0; }
+            50% { margin-top: -15px; }
+        }
+
+        #flash-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #fff; z-index: 190;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+
+        /* === 结尾文字 === */
+        .stagger-text p, .stagger-text h1 { margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .footnote { font-size: 0.85rem; color: rgba(255, 255, 255, 0.4); margin-top: 40px; letter-spacing: 1px; }
+
+        /* === 第五幕：路灯效果 === */
+        #act5-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #010204; z-index: -1; }
+        .streetlights {
+            position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 30vh;
+            display: flex; justify-content: space-around; align-items: flex-end;
+            padding: 0 5%; z-index: 0;
+        }
+        .post { width: 3px; height: 100%; background: #1a1a1a; position: relative; }
+        .lamp {
+            position: absolute; top: 0; left: -6px;
+            width: 15px; height: 15px; border-radius: 50%;
+            background: #0a0a0a; transition: background 1s, box-shadow 1s;
+        }
+        .lamp.on { background: #e0f2fe; box-shadow: 0 0 25px 10px rgba(224, 242, 254, 0.5); }
+        .lamp.on::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 150px; height: 150px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 160, 50, 0.08) 0%, transparent 60%);
+            pointer-events: none; animation: flicker 4s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .content-layer { position: relative; z-index: 10; width: 100%; padding: 0 20px; }
+
+        /* =========================================
+           移动端适配 (宽度 < 768px)
+           ========================================= */
+        @media (max-width: 768px) {
+            p { font-size: 1.15rem; margin-bottom: 20px; line-height: 1.7; }
+            h1 { font-size: 2.2rem !important; margin-bottom: 30px; }
+            h2 { font-size: 1.6rem; }
+            h3 { font-size: 1.3rem; }
+            .large-text { font-size: 1.6rem; letter-spacing: 2px; }
+
+            #lang-btn { top: 15px; right: 15px; padding: 8px 16px; }
+            #back-btn { top: 15px; left: 15px; padding: 8px 16px; }
+
+            .choice-btn { padding: 18px 24px; font-size: 1.1rem; }
+            #next-btn { padding: 14px 28px; font-size: 1.15rem; bottom: 30px; }
+
+            /* 初始裂开线（横向） */
+            #center-line-initial {
+                top: 50%; left: 0; width: 100vw; height: 2px;
+                transform: translateY(-50%) scaleX(0); transform-origin: center;
+            }
+            #center-line-initial.grow { transform: translateY(-50%) scaleX(1); }
+
+            /* 门动画（上下开启） */
+            .door { width: 100vw; height: 50vh; border: none !important; }
+            #door-left { top: 0; left: 0; border-bottom: 1px solid rgba(255,255,255,0.1) !important; transform-origin: top; }
+            #door-right { top: 50%; right: 0; border-top: 1px solid rgba(255,255,255,0.1) !important; transform-origin: bottom; }
+            #door-left.open { transform: translateY(-100%); }
+            #door-right.open { transform: translateY(100%); }
+
+            /* 分屏布局（上下排列） */
+            .split-layout { flex-direction: column; }
+            .pane { padding: 15% 8%; }
+
+            /* 中间分割线（横向） */
+            #center-divider {
+                top: 50%; left: 0; width: 100vw; height: 1px;
+                transform: translateY(-50%);
+            }
+            #center-divider.pulsing { width: 100vw; height: 2px; }
+
+            /* 瓶子动画（从上往下） */
+            #bottle { top: 25%; left: 50%; }
+            #bottle.move { top: 75%; left: 50%; }
+
+            /* 居中弹窗卡片防越界 */
+            .center-overlay { width: 90%; padding: 30px 25px; }
+
+            .streetlights { height: 25vh; }
+            .lamp.on::after { width: 100px; height: 100px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 粒子容器 -->
+    <div id="particles"></div>
+
+    <!-- 语言切换 -->
+    <button id="lang-btn" onclick="toggleLang()">中/EN</button>
+    <button id="back-btn" class="i18n" data-zh="◀ 返回" data-en="◀ Back" onclick="prevStep()"></button>
+
+    <!-- 全局继续按钮 -->
+    <button id="next-btn" class="i18n hidden fade-in" data-zh="继续 ▼" data-en="Continue ▼" onclick="nextStep()"></button>
+
+    <!-- 幕间过渡层 -->
+    <div id="trans-overlay" class="overlay-transition">
+        <p id="trans-text" class="i18n fade-up" data-zh="" data-en=""></p>
+    </div>
+
+    <!-- 闪光层 (穿越时使用) -->
+    <div id="flash-overlay"></div>
+
+    <!-- === 封面 (Act 0) === -->
+    <div id="intro-screen" class="full-screen-container active">
+        <h1 class="i18n large-text fade-up visible" style="margin-bottom: 20px;" data-zh="最后一瓶·双生记" data-en="The Last Warm Bottle: Split Lives"></h1>
+        <p class="i18n italic fade-up visible" style="margin-bottom: 60px; opacity: 0.8; font-size: 1rem;" data-zh="一个关于记忆、贫穷与制度的互动叙事" data-en="An interactive narrative about memory, poverty, and the system"></p>
+        <button class="choice-btn i18n fade-up visible" style="width: auto; padding: 15px 50px; border-radius: 30px; text-align: center; margin-top: 20px; font-weight: 500;" data-zh="开始体验 / Begin" data-en="Begin" onclick="nextStep()"></button>
+    </div>
+
+    <!-- === 第一幕 裂屏结构 === -->
+    <div id="act1-notice" class="hidden">
+        <p class="i18n fade-up hidden act1-p" data-zh="致全体市民：记忆丰收季即将开始。"
+            data-en="To all citizens: The Memory Harvest Season is approaching."></p>
+        <p class="i18n fade-up hidden act1-p" data-zh="请各位珍惜与亲人的温暖时刻，为城市的光明贡献力量。"
+            data-en="Cherish the warm moments with your loved ones, and contribute to the city's light."></p>
+        <p class="i18n fade-up hidden act1-p" data-zh="——让爱继续照亮城市。" data-en="— Let love continue to light up the city.">
+        </p>
+    </div>
+
+    <div id="center-line-initial"></div>
+    <div id="door-left" class="door"></div>
+    <div id="door-right" class="door"></div>
+
+    <!-- === 分屏布局 === -->
+    <div id="split-layout" class="split-layout hidden">
+        <div id="center-divider"></div>
+
+        <!-- 左屏 (上) -->
+        <div class="pane pane-left">
+            <!-- Act 1 L -->
+            <div id="act1-L" class="act-content hidden">
+                <div class="notification fade-up hidden act1-L-start">
+                    <p class="i18n" data-zh="您的家属（陈秀兰，外祖母）已进入高离世概率阶段。预计征收时间：30天内。"
+                        data-en="Your family member (Chen Xiulan, grandmother) has entered the high-mortality stage. Expected extraction: within 30 days.">
+                    </p>
+                </div>
+                <div class="bottom-small i18n fade-up hidden act1-L-start" data-zh="家庭年余辉点余额：47"
+                    data-en="Annual afterglow balance: 47"></div>
+            </div>
+
+            <!-- Act 2 L -->
+            <div id="act2-L" class="act-content hidden">
+                <h2 class="i18n fade-up hidden step-2-1" data-zh="褪色区" data-en="The Fade Zone"></h2>
+                <p class="i18n fade-up hidden step-2-1" data-zh="陈婆婆知道自己要走了。"
+                    data-en="Grandma Chen knew she was dying."></p>
+                <p class="i18n fade-up hidden step-2-2" data-zh="她开始故意疏远小陈——不让他来看望太久，不说从前的事，不再在火边给他剥橘子。"
+                    data-en="She began deliberately distancing herself from Xiao Chen — cutting visits short, avoiding talk of the past, no longer peeling oranges for him by the fire.">
+                </p>
+                <p class="i18n italic fade-up hidden step-2-3" data-zh="“记忆浓度只要不超过那条线……他们就拿不走。我不能让小陈的那份太深。”"
+                    data-en="&quot;As long as the intensity stays below that line... they can't take it. I can't let Xiao Chen's share grow too deep.&quot;">
+                </p>
+            </div>
+
+            <!-- Act 3 L -->
+            <div id="act3-L" class="act-content hidden">
+                <div class="card fade-up hidden act3-L-start">
+                    <h3 class="i18n" data-zh="陈秀兰·终温记忆评估结果" data-en="Chen Xiulan · Terminal Memory Assessment"></h3>
+                    <p class="i18n" data-zh="对象浓度：61%（低于强制征收线）"
+                        data-en="Subject intensity: 61% (below mandatory extraction line)"></p>
+                    <p class="i18n" data-zh="状态：未达标，豁免征收" data-en="Status: Below threshold. Exempt."></p>
+                    <p class="i18n italic" data-zh="备注：该家庭暂无可征收资产"
+                        data-en="Note: No extractable assets from this household."></p>
+                </div>
+                <p class="i18n fade-up hidden act3-L-start delay-1" data-zh="小陈松了一口气。外婆的策略成功了。"
+                    data-en="Xiao Chen exhaled. His grandmother's strategy had worked."></p>
+            </div>
+
+            <!-- Act 4 L -->
+            <div id="act4-L" class="act-content hidden">
+                <div class="data-panel fade-up hidden act4-L-start">
+                    <p class="i18n" data-zh="陈家供暖配额：0" data-en="Heating quota: 0"></p>
+                    <p class="i18n" data-zh="本月余辉点余额：3" data-en="Monthly balance: 3"></p>
+                    <p class="i18n" data-zh="室内温度：-2°C" data-en="Indoor temp: -2°C"></p>
+                </div>
+                <p class="i18n fade-up hidden act4-L-start delay-1"
+                    data-zh="小陈的母亲病倒了。他看着外婆留下的那只小瓶——61%的记忆，不够格被国家征收，但在黑市……"
+                    data-en="Xiao Chen's mother collapsed. He stared at the small bottle his grandmother left behind — 61% intensity, not enough for the state, but on the black market...">
+                </p>
+
+                <div id="choice2-box" class="fade-up hidden act4-L-start delay-2"
+                    style="margin-top:40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+                    <p class="i18n" data-zh="小陈面前有两条路：" data-en="Xiao Chen has two paths:"></p>
+                    <button class="choice-btn i18n" data-zh="A. 保住外婆的记忆，熬过这个冬天"
+                        data-en="A. Keep grandmother's memory, endure the winter"
+                        onclick="makeChoice(2, this, 'A')"></button>
+                    <button class="choice-btn i18n" data-zh="B. 带着瓶子去黑市"
+                        data-en="B. Take the bottle to the black market" onclick="makeChoice(2, this, 'B')"></button>
+                </div>
+
+                <div id="act4-L-result" class="fade-up hidden" style="margin-top: 30px;">
+                    <p class="i18n" data-zh="三天后。他还是去了。" data-en="Three days later. He went anyway."></p>
+                    <p id="act4-L-extra" class="i18n hidden italic" data-zh="第四天早上醒来时，母亲已经没有呼吸了。"
+                        data-en="On the fourth morning, his mother was no longer breathing."></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右屏 (下) -->
+        <div class="pane pane-right">
+            <!-- Act 1 R -->
+            <div id="act1-R" class="act-content hidden">
+                <div class="notification fade-up hidden act1-R-start">
+                    <p class="i18n" data-zh="您的家属（林国梁，父亲）已进入高离世概率阶段。预计征收时间：30天内。"
+                        data-en="Your family member (Lin Guoliang, father) has entered the high-mortality stage. Expected extraction: within 30 days.">
+                    </p>
+                </div>
+                <div class="bottom-small i18n fade-up hidden act1-R-start" data-zh="家庭年余辉点余额：58,000+"
+                    data-en="Annual afterglow balance: 58,000+"></div>
+            </div>
+
+            <!-- Act 2 R -->
+            <div id="act2-R" class="act-content hidden">
+                <h2 class="i18n fade-up hidden step-2-1" data-zh="VIP区" data-en="The VIP District"></h2>
+                <p class="i18n fade-up hidden step-2-1" data-zh="林国梁被安排进了“终温培训计划”。"
+                    data-en="Lin Guoliang was enrolled in the 'Terminal Warmth Training Program.'"></p>
+                <p class="i18n fade-up hidden step-2-2" data-zh="专业的情感培训师每天上门，指导林越如何与父亲“创造高质量陪伴时刻”。"
+                    data-en="Professional emotional consultants visited daily, coaching Lin Yue on how to 'create high-quality bonding moments' with his father.">
+                </p>
+                <p class="i18n italic fade-up hidden step-2-3" data-zh="“林先生，请今天和您父亲一起翻看童年相册。浓度目标：92%以上。”"
+                    data-en="&quot;Mr. Lin, please look through childhood albums with your father today. Intensity target: above 92%.&quot;">
+                </p>
+            </div>
+
+            <!-- Act 3 R -->
+            <div id="act3-R" class="act-content hidden">
+                <div class="card fade-up hidden act3-R-start">
+                    <h3 class="i18n" data-zh="林国梁·终温记忆评估结果" data-en="Lin Guoliang · Terminal Memory Assessment"></h3>
+                    <p class="i18n" data-zh="对象浓度：97%（AAA级）" data-en="Subject intensity: 97% (AAA-grade)"></p>
+                    <p class="i18n" data-zh="能量估值：8,500余辉点" data-en="Energy value: 8,500 afterglow points"></p>
+                    <p class="i18n" data-zh="状态：达标，即将征收" data-en="Status: Qualified. Extraction imminent."></p>
+                </div>
+                <p class="i18n fade-up hidden act3-R-start delay-1" data-zh="林越慌了。他不想失去这段记忆。"
+                    data-en="Lin Yue panicked. He didn't want to lose this memory."></p>
+            </div>
+
+            <!-- Act 4 R -->
+            <div id="act4-R" class="act-content hidden">
+                <div class="fade-up hidden act4-R-start">
+                    <p class="i18n" data-zh="林越找到了黑市掮客。" data-en="Lin Yue found a black market broker."></p>
+                    <div style="margin-top:30px;">
+                        <p class="dialogue"><span class="i18n opacity-50" data-zh="掮客： " data-en="Broker: "></span><span
+                                class="i18n" data-zh="“我有一批货。本体真，结构稳。补完浓度后可以合法替缴——您父亲的那份就不用交了。”"
+                                data-en="&quot;I have stock. Genuine core, stable structure. Once enhanced, it qualifies as a legal substitute — your father's debt is cleared.&quot;"></span>
+                        </p>
+                        <p class="dialogue"><span class="i18n opacity-50" data-zh="林越： "
+                                data-en="Lin Yue: "></span><span class="i18n" data-zh="“多少？”"
+                                data-en="&quot;How much?&quot;"></span></p>
+                        <p class="dialogue"><span class="i18n opacity-50" data-zh="掮客： " data-en="Broker: "></span><span
+                                class="i18n" data-zh="“12,000余辉点，含增谱服务。”"
+                                data-en="&quot;12,000 afterglow points. Enhancement included.&quot;"></span></p>
+                        <p class="dialogue"><span class="i18n opacity-50" data-zh="林越： "
+                                data-en="Lin Yue: "></span><span class="i18n" data-zh="“成交。”"
+                                data-en="&quot;Done.&quot;"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 居中选择卡片 -->
+        <div id="choice1-box" class="center-overlay fade-up hidden">
+            <p class="i18n" data-zh="你觉得哪一边更残忍？" data-en="Which side do you think is crueler?"></p>
+            <button class="choice-btn i18n" data-zh="A. 左边——被迫冷淡" data-en="A. Left — forced coldness"
+                onclick="makeChoice(1, this, 'A')"></button>
+            <button class="choice-btn i18n" data-zh="B. 右边——表演性亲热" data-en="B. Right — performative warmth"
+                onclick="makeChoice(1, this, 'B')"></button>
+            <button class="choice-btn i18n" data-zh="C. 都一样" data-en="C. Both the same"
+                onclick="makeChoice(1, this, 'C')"></button>
+        </div>
+
+        <!-- 动画元素 -->
+        <div id="bottle"></div>
+    </div>
+
+    <!-- === 第四幕 结尾揭示 === -->
+    <div id="act4-full" class="full-screen-container stagger-text">
+        <p class="i18n fade-up hidden seq-1" data-zh="陈婆婆花了最后那段日子，拼命把爱压在线下面。"
+            data-en="Grandma Chen spent her final days pressing her love below the line."></p>
+        <p class="i18n fade-up hidden seq-2" data-zh="增谱师只用了几分钟，就把它推了回去。"
+            data-en="The memory enhancer pushed it back up in minutes."></p>
+        <p class="i18n fade-up hidden seq-3" data-zh="她以为她保护了小陈。" data-en="She thought she was protecting Xiao Chen.">
+        </p>
+        <p class="i18n fade-up hidden seq-4" data-zh="而这份保护，被标价12,000余辉点，买来保护了另一个家庭。"
+            data-en="And that protection was priced at 12,000 afterglow points — bought to protect someone else's family.">
+        </p>
+    </div>
+
+    <!-- === 第五幕 结局 === -->
+    <div id="act5-full" class="full-screen-container stagger-text">
+        <div id="act5-bg"></div>
+        <div class="streetlights" id="streetlights-container">
+            <!-- JS 动态生成路灯 -->
+        </div>
+
+        <div class="content-layer">
+            <p class="i18n fade-up hidden seq-5-1" data-zh="“你闻到了吗？”" data-en="&quot;Can you smell it?&quot;"></p>
+            <p class="i18n fade-up hidden seq-5-2" data-zh="“什么？”" data-en="&quot;What?&quot;"></p>
+            <p class="i18n fade-up hidden seq-5-3" data-zh="“橘子皮。冬天的时候，她总在火边给我剥橘子。”"
+                data-en="&quot;Orange peel. In winter, she always peeled oranges for me by the fire.&quot;"></p>
+
+            <p class="i18n fade-up hidden seq-5-4 italic"
+                style="color: rgba(255,255,255,0.6); font-size: 0.95rem; margin-top:40px;"
+                data-zh="——那是记忆被送入系统前，最后泄出来的一点公共残影。"
+                data-en="— The last trace of public afterimage, leaking out before the memory entered the system."></p>
+
+            <h1 class="i18n fade-up hidden seq-5-5 large-text"
+                style="margin: 60px auto; color: #e0f2fe; text-shadow: 0 0 20px rgba(224, 242, 254, 0.4);"
+                data-zh="让爱继续照亮城市。" data-en="Let love continue to light up the city."></h1>
+
+            <div class="footnote">
+                <p class="i18n fade-up hidden seq-5-6" style="margin-bottom: 8px;" data-zh="您刚才做出的选择，在忆市的制度下没有任何意义。"
+                    data-en="The choice you made meant nothing under Keepsend's system."></p>
+                <p class="i18n fade-up hidden seq-5-6" style="margin-bottom: 8px;" data-zh="无论您选了什么，结局都不会改变。"
+                    data-en="No matter what you chose, the outcome would not change."></p>
+                <p class="i18n fade-up hidden seq-5-6" data-zh="这就是这颗星球上，大多数人的处境。"
+                    data-en="This is how it is for most people on this planet."></p>
+            </div>
+
+            <!-- 重新开始按钮 -->
+            <button id="restart-btn" class="choice-btn i18n fade-up hidden" style="width: auto; margin: 40px auto 0; padding: 12px 35px; font-size: 1rem; border-color: rgba(255,255,255,0.3); border-radius: 30px; text-align: center;" data-zh="重新开始 / Restart" data-en="Restart" onclick="restartGame()"></button>
+        </div>
+    </div>
+
+    <script>
+        // === 状态控制与快进 ===
+        let isNavigating = false;
+        let isFastForwarding = false;
+        const realSetTimeout = window.setTimeout;
+        window.setTimeout = function(fn, delay) {
+            if (isFastForwarding) {
+                try { fn(); } catch(e) { console.error(e); }
+                return 0; 
+            }
+            return realSetTimeout(fn, delay);
+        };
+
+        // === 初始化粒子 (针对移动端优化数量) ===
+        function initParticles() {
+            const container = document.getElementById('particles');
+            const isMobile = window.innerWidth < 768;
+            const count = isMobile ? 15 : 35; // 移动端减少粒子数量
+            for (let i = 0; i < count; i++) {
+                let p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.top = Math.random() * 100 + 'vh';
+                let size = Math.random() * 2 + 1;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.animationDuration = (Math.random() * 15 + 15) + 's';
+                p.style.animationDelay = (Math.random() * 5) + 's';
+                container.appendChild(p);
+            }
+        }
+        initParticles();
+
+        // === 初始化路灯 ===
+        function initStreetlights() {
+            const container = document.getElementById('streetlights-container');
+            for (let i = 0; i < 6; i++) {
+                let post = document.createElement('div');
+                post.className = 'post';
+                let lamp = document.createElement('div');
+                lamp.className = 'lamp';
+                lamp.id = 'lamp-' + i;
+                post.appendChild(lamp);
+                container.appendChild(post);
+            }
+        }
+        initStreetlights();
+
+        // === 多语言控制 (带平滑淡入淡出) ===
+        let currentLang = 'zh';
+        function renderLang() {
+            document.querySelectorAll('.i18n').forEach(el => {
+                if(el.tagName.toLowerCase() === 'input' || el.tagName.toLowerCase() === 'textarea') {
+                    el.placeholder = el.getAttribute(`data-${currentLang}`);
+                } else {
+                    el.innerHTML = el.getAttribute(`data-${currentLang}`);
+                }
+            });
+            document.body.setAttribute('lang', currentLang);
+        }
+
+        function toggleLang() {
+            // 所有文字透明度降为0
+            const textElements = document.querySelectorAll('.i18n');
+            textElements.forEach(el => el.classList.add('lang-fading'));
+            
+            setTimeout(() => {
+                currentLang = currentLang === 'zh' ? 'en' : 'zh';
+                renderLang();
+                
+                // 恢复透明度
+                textElements.forEach(el => el.classList.remove('lang-fading'));
+            }, 200); // 200ms的淡入淡出
+        }
+
+        // === 动画与流程工具 ===
+        function getEls(target) {
+            if (typeof target === 'string') return document.querySelectorAll(target);
+            if (target instanceof NodeList) return target;
+            return [target];
+        }
+        function show(id) { document.getElementById(id).classList.remove('hidden'); }
+        function hide(id) { document.getElementById(id).classList.add('hidden'); }
+        function showFadeUp(target, delayIndex = 0) {
+            getEls(target).forEach(el => {
+                if(!el) return;
+                el.classList.remove('hidden');
+                // 强制重绘
+                void el.offsetWidth; 
+                setTimeout(() => {
+                    el.classList.add('visible');
+                }, delayIndex * 500 + 50);
+            });
+        }
+
+        function hideAllFadeUp(target) {
+            getEls(target).forEach(el => {
+                if(!el) return;
+                el.classList.remove('visible');
+                setTimeout(() => el.classList.add('hidden'), 1000); // 等待淡出动画结束
+            });
+        }
+
+        function triggerOverlayTrans(zhText, enText, callback) {
+            const overlay = document.getElementById('trans-overlay');
+            const textEl = document.getElementById('trans-text');
+            textEl.setAttribute('data-zh', zhText);
+            textEl.setAttribute('data-en', enText);
+            renderLang(); 
+
+            overlay.classList.add('active');
+            setTimeout(() => {
+                textEl.classList.add('visible');
+                setTimeout(() => {
+                    textEl.classList.remove('visible');
+                    setTimeout(() => {
+                        overlay.classList.remove('active');
+                        if (callback) callback();
+                    }, 1000);
+                }, 2000);
+            }, 500);
+        }
+
+        // === 剧本状态机 ===
+        let currentStep = 0;
+
+        const flow = [
+            // 0: 从封面进入第一幕公告
+            () => {
+                document.getElementById('intro-screen').classList.remove('active');
+                setTimeout(() => {
+                    hide('intro-screen');
+                    show('act1-notice'); 
+                    const pList = document.querySelectorAll('.act1-p');
+                    pList.forEach((p, i) => showFadeUp(p, i * 2));
+                    setTimeout(() => { show('next-btn'); }, 2000);
+                }, 1500);
+            },
+            // 1: 裂屏动画
+            () => {
+                hideAllFadeUp('.act1-p');
+                hide('next-btn'); 
+
+                setTimeout(() => {
+                    hide('act1-notice');
+                    const line = document.getElementById('center-line-initial');
+                    show('center-line-initial');
+                    line.classList.add('grow'); // 使用 CSS class 以兼容移动端方向
+
+                    setTimeout(() => {
+                        document.getElementById('door-left').classList.add('open');
+                        document.getElementById('door-right').classList.add('open');
+                        line.style.opacity = '0'; 
+
+                        show('split-layout');
+                        setTimeout(() => document.getElementById('split-layout').classList.add('visible'), 100);
+
+                        show('act1-L'); show('act1-R');
+                        setTimeout(() => {
+                            showFadeUp('.act1-L-start'); showFadeUp('.act1-R-start');
+                            show('next-btn'); 
+                        }, 1500);
+                    }, 1200);
+                }, 1000);
+            },
+            // 2: 第二幕 1
+            () => {
+                hideAllFadeUp('.act1-L-start, .act1-R-start');
+                hide('next-btn');
+                setTimeout(() => { hide('act1-L'); hide('act1-R'); }, 1000);
+                show('act2-L'); show('act2-R');
+                showFadeUp('.step-2-1');
+                setTimeout(() => show('next-btn'), 500);
+            },
+            // 3: 第二幕 2
+            () => { 
+                hide('next-btn');
+                showFadeUp('.step-2-2'); 
+                setTimeout(() => show('next-btn'), 500);
+            },
+            // 4: 第二幕 3
+            () => { 
+                hide('next-btn');
+                showFadeUp('.step-2-3'); 
+                setTimeout(() => show('next-btn'), 500);
+            },
+            // 5: 选择 1
+            () => {
+                hide('next-btn');
+                show('choice1-box');
+                showFadeUp('#choice1-box');
+            },
+            // 6: 过渡 -> 第三幕
+            () => {
+                hideAllFadeUp('#choice1-box, .step-2-1, .step-2-2, .step-2-3');
+                setTimeout(() => {
+                    hide('choice1-box'); hide('act2-L'); hide('act2-R');
+                    triggerOverlayTrans("30天后——", "30 days later —", () => {
+                        show('act3-L'); show('act3-R');
+                        showFadeUp('.act3-L-start'); showFadeUp('.act3-R-start');
+                        show('next-btn');
+                    });
+                }, 1000);
+            },
+            // 7: 过渡 -> 第四幕
+            () => {
+                hideAllFadeUp('.act3-L-start, .act3-R-start');
+                hide('next-btn');
+                setTimeout(() => {
+                    hide('act3-L'); hide('act3-R');
+                    triggerOverlayTrans("冬天来了。", "Winter came.", () => {
+                        show('act4-L');
+                        showFadeUp('.act4-L-start'); 
+                    });
+                }, 1000);
+            },
+            // 8: 瓶子穿越核心动画
+            () => {
+                hide('next-btn');
+                hideAllFadeUp('#choice2-box');
+
+                // 让中间线发光脉冲
+                document.getElementById('center-divider').classList.add('pulsing');
+
+                setTimeout(() => {
+                    const bottle = document.getElementById('bottle');
+                    bottle.style.opacity = '1';
+
+                    // 开始移动
+                    setTimeout(() => {
+                        bottle.classList.add('move');
+
+                        // 在中间位置时（约1.75秒），全屏闪白光，改变瓶子颜色
+                        setTimeout(() => {
+                            const flash = document.getElementById('flash-overlay');
+                            flash.style.opacity = '1';
+                            bottle.classList.add('transformed');
+
+                            setTimeout(() => { flash.style.opacity = '0'; }, 150);
+                        }, 1750);
+
+                        // 到达终点后
+                        setTimeout(() => {
+                            // 渐隐分屏
+                            document.getElementById('split-layout').classList.remove('visible');
+
+                            setTimeout(() => {
+                                hide('split-layout');
+                                show('act4-full');
+                                document.getElementById('act4-full').classList.add('active');
+
+                                // 逐行展示揭示文案
+                                showFadeUp('.seq-1');
+                                setTimeout(() => showFadeUp('.seq-2'), 1500);
+                                setTimeout(() => showFadeUp('.seq-3'), 3000);
+                                setTimeout(() => { showFadeUp('.seq-4'); show('next-btn'); }, 4500);
+
+                            }, 1000);
+                        }, 3500);
+                    }, 1000);
+                }, 1000);
+            },
+            // 9: 第五幕 路灯
+            () => {
+                hide('next-btn');
+                document.getElementById('act4-full').classList.remove('active');
+
+                setTimeout(() => {
+                    hide('act4-full');
+                    show('act5-full');
+                    document.getElementById('act5-full').classList.add('active');
+
+                    // 逐个点亮路灯
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(() => {
+                            document.getElementById('lamp-' + i).classList.add('on');
+                        }, 800 * i + 500);
+                    }
+
+                    // 对话展开
+                    setTimeout(() => { showFadeUp('.seq-5-1'); }, 2000);
+                    setTimeout(() => { showFadeUp('.seq-5-2'); }, 4000);
+                    setTimeout(() => { showFadeUp('.seq-5-3'); }, 6000);
+                    setTimeout(() => { showFadeUp('.seq-5-4'); }, 9000);
+                    setTimeout(() => { showFadeUp('.seq-5-5'); }, 12000);
+                    setTimeout(() => { showFadeUp('.seq-5-6'); }, 16000);
+                    
+                    // 显示重新开始按钮
+                    setTimeout(() => { 
+                        show('restart-btn');
+                        showFadeUp('#restart-btn'); 
+                    }, 18000); 
+
+                }, 1500);
+            }
+        ];
+
+        function updateBackBtn() {
+            const backBtn = document.getElementById('back-btn');
+            if (currentStep > 0) {
+                backBtn.classList.add('visible');
+            } else {
+                backBtn.classList.remove('visible');
+            }
+        }
+
+        function prevStep() {
+            if (!isFastForwarding && isNavigating) return;
+            
+            let target = currentStep - 1;
+            let c2 = sessionStorage.getItem('choice2Val') || '';
+            
+            if (currentStep === 8 && isChoiceMadeAct4) {
+                target = 8;
+                c2 = ''; // 重置选择2
+            }
+            
+            sessionStorage.setItem('targetStep', target);
+            sessionStorage.setItem('choice2Val', c2);
+            sessionStorage.setItem('currentLang', currentLang);
+            
+            document.body.style.transition = 'opacity 0.2s';
+            document.body.style.opacity = '0';
+            realSetTimeout(() => window.location.reload(), 200);
+        }
+
+        function nextStep() {
+            if (!isFastForwarding && isNavigating) return;
+            if (!isFastForwarding) {
+                isNavigating = true;
+                realSetTimeout(() => { isNavigating = false; }, 500);
+            }
+
+            if (currentStep < flow.length) {
+                flow[currentStep]();
+                currentStep++;
+                if (!isFastForwarding) updateBackBtn();
+            }
+        }
+
+        // 选择按钮逻辑
+        let isChoiceMadeAct4 = false;
+        function makeChoice(num, btnElement, val) {
+            if (btnElement && btnElement.disabled) return;
+            if (!isFastForwarding && isNavigating) return;
+            if (!isFastForwarding) {
+                isNavigating = true;
+                realSetTimeout(() => { isNavigating = false; }, 500);
+            }
+
+            if (btnElement) {
+                // 禁用其他按钮，防止同时点击多个选项
+                const siblings = btnElement.parentElement.querySelectorAll('.choice-btn');
+                siblings.forEach(el => { el.style.pointerEvents = 'none'; el.disabled = true; });
+                btnElement.classList.add('selected');
+            }
+
+            setTimeout(() => {
+                if (num === 1) {
+                    nextStep(); // 触发前往第三幕的过渡
+                } else if (num === 2) {
+                    if (isChoiceMadeAct4) return;
+                    isChoiceMadeAct4 = true;
+                    if (!isFastForwarding) sessionStorage.setItem('choice2Val', val);
+                    
+                    // 第四幕：隐藏选项，延时展示左侧结果，然后展示右侧故事
+                    hideAllFadeUp('#choice2-box');
+                    setTimeout(() => {
+                        show('act4-L-result');
+                        if (val === 'A') show('act4-L-extra'); // A选项额外多一句描述，但结局和B一样汇合
+                        showFadeUp('#act4-L-result');
+
+                        // 2.5秒后右侧故事淡入
+                        setTimeout(() => {
+                            show('act4-R');
+                            showFadeUp('.act4-R-start');
+                            setTimeout(() => {
+                                show('next-btn'); // 允许点击进入最终穿越动画
+                            }, 1000);
+                        }, 2500);
+                    }, 1000);
+                }
+            }, 800);
+        }
+
+        function restartGame() {
+            sessionStorage.clear();
+            document.body.style.transition = 'opacity 0.5s';
+            document.body.style.opacity = '0';
+            realSetTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // 启动
+        window.onload = () => {
+            let savedLang = sessionStorage.getItem('currentLang');
+            if (savedLang) currentLang = savedLang;
+            renderLang();
+
+            let targetStep = sessionStorage.getItem('targetStep');
+            if (targetStep !== null) {
+                targetStep = parseInt(targetStep);
+                let c2 = sessionStorage.getItem('choice2Val');
+                sessionStorage.removeItem('targetStep');
+                
+                isFastForwarding = true;
+                document.body.classList.add('no-transitions');
+                
+                for(let i=0; i<targetStep; i++) {
+                    flow[i]();
+                    currentStep++;
+                }
+                
+                if (targetStep >= 8 && c2) {
+                    const btnIdx = c2 === 'A' ? 0 : 1;
+                    makeChoice(2, document.querySelectorAll('#choice2-box .choice-btn')[btnIdx], c2);
+                }
+
+                realSetTimeout(() => { 
+                    isFastForwarding = false;
+                    document.body.offsetHeight; // force reflow
+                    document.body.classList.remove('no-transitions');
+                    updateBackBtn();
+                }, 100);
+            } else {
+                updateBackBtn();
+            }
+        };
+    </script>
+</body>
+</html>
